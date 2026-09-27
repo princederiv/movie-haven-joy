@@ -182,7 +182,7 @@ function Reel({
   );
 }
 
-function ReelPlayer({ startIndex, onClose }: { startIndex: number; onClose: () => void }) {
+export function ReelPlayer({ startIndex, onClose }: { startIndex: number; onClose: () => void }) {
   const scroller = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(startIndex);
   const [muted, setMuted] = useState(true);
