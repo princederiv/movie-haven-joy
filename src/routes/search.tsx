@@ -4,15 +4,15 @@ import { AppShell } from "@/components/AppShell";
 import { MoviePoster } from "@/components/MoviePoster";
 import { GENRES, MOVIES, searchMovies } from "@/lib/movies";
 
-type SearchParams = { q: string; genre?: string; year?: number };
+type SearchParams = { q: string; genre?: string | undefined; year?: number | undefined };
 
 const YEARS = Array.from(new Set(MOVIES.map((m) => m.year))).sort((a, b) => b - a);
 
 export const Route = createFileRoute("/search")({
   validateSearch: (search: Record<string, unknown>): SearchParams => ({
-    q: typeof search.q === "string" ? search.q : "",
-    genre: typeof search.genre === "string" && search.genre ? search.genre : undefined,
-    year: Number(search.year) || undefined,
+    q: typeof search["q"] === "string" ? (search["q"] as string) : "",
+    genre: typeof search["genre"] === "string" && search["genre"] ? (search["genre"] as string) : undefined,
+    year: Number(search["year"]) || undefined,
   }),
   head: () => ({
     meta: [

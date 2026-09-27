@@ -198,7 +198,7 @@ export function byGenre(genre: string): Movie[] {
 
 export function searchMovies(
   query: string,
-  filters: { genre?: string; year?: number } = {},
+  filters: { genre?: string | undefined; year?: number | undefined } = {},
 ): Movie[] {
   const q = query.trim().toLowerCase();
   return MOVIES.filter((m) => {

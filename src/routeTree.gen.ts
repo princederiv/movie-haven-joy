@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DownloadsRouteImport } from './routes/downloads'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as MovieMovieIdRouteImport } from './routes/movie.$movieId'
 
@@ -30,6 +31,11 @@ const DownloadsRoute = DownloadsRouteImport.update({
   path: '/downloads',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/downloads': typeof DownloadsRoute
+  '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/movie/$movieId': typeof MovieMovieIdRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/downloads': typeof DownloadsRoute
+  '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/movie/$movieId': typeof MovieMovieIdRoute
 }
@@ -60,21 +68,31 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/downloads': typeof DownloadsRoute
+  '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/movie/$movieId': typeof MovieMovieIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/downloads' | '/search' | '/movie/$movieId'
+  fullPaths:
+    '/' | '/auth' | '/downloads' | '/profile' | '/search' | '/movie/$movieId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/downloads' | '/search' | '/movie/$movieId'
-  id: '__root__' | '/' | '/auth' | '/downloads' | '/search' | '/movie/$movieId'
+  to: '/' | '/auth' | '/downloads' | '/profile' | '/search' | '/movie/$movieId'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/downloads'
+    | '/profile'
+    | '/search'
+    | '/movie/$movieId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   DownloadsRoute: typeof DownloadsRoute
+  ProfileRoute: typeof ProfileRoute
   SearchRoute: typeof SearchRoute
   MovieMovieIdRoute: typeof MovieMovieIdRoute
 }
@@ -102,6 +120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DownloadsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
@@ -123,6 +148,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   DownloadsRoute: DownloadsRoute,
+  ProfileRoute: ProfileRoute,
   SearchRoute: SearchRoute,
   MovieMovieIdRoute: MovieMovieIdRoute,
 }
