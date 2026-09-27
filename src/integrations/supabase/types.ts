@@ -14,7 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      continue_watching: {
+        Row: {
+          backdrop_url: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          last_watched_at: string
+          movie_id: string
+          poster_url: string | null
+          progress_seconds: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          backdrop_url?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          last_watched_at?: string
+          movie_id: string
+          poster_url?: string | null
+          progress_seconds?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          backdrop_url?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          last_watched_at?: string
+          movie_id?: string
+          poster_url?: string | null
+          progress_seconds?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      watchlist: {
+        Row: {
+          backdrop_url: string | null
+          created_at: string
+          id: string
+          movie_id: string
+          poster_url: string | null
+          rating: number | null
+          release_year: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          backdrop_url?: string | null
+          created_at?: string
+          id?: string
+          movie_id: string
+          poster_url?: string | null
+          rating?: number | null
+          release_year?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          backdrop_url?: string | null
+          created_at?: string
+          id?: string
+          movie_id?: string
+          poster_url?: string | null
+          rating?: number | null
+          release_year?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
