@@ -19,7 +19,8 @@ import {
 } from "@/lib/library.functions";
 
 export const Route = createFileRoute("/movie/$movieId")({
-  validateSearch: (search: Record<string, unknown>) => ({ play: search.play === true || search.play === "true" }),
+  validateSearch: (search: Record<string, unknown>): { play?: boolean } =>
+    search["play"] === true || search["play"] === "true" ? { play: true } : {},
   loader: ({ params }) => {
     const movie = getMovie(params.movieId);
     if (!movie) throw notFound();

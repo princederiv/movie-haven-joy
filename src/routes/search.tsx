@@ -10,7 +10,7 @@ const YEARS = Array.from(new Set(MOVIES.map((m) => m.year))).sort((a, b) => b - 
 
 export const Route = createFileRoute("/search")({
   validateSearch: (search: Record<string, unknown>): SearchParams => ({
-    q: typeof search["q"] === "string" ? (search["q"] as string) : "",
+    q: typeof search["q"] === "string" ? (search["q"] as string) : undefined,
     genre: typeof search["genre"] === "string" && search["genre"] ? (search["genre"] as string) : undefined,
     year: Number(search["year"]) || undefined,
   }),
