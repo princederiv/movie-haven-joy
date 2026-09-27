@@ -5,6 +5,7 @@ import { Play, Plus, Star } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { PosterRail } from "@/components/PosterRail";
 import { MoviePoster } from "@/components/MoviePoster";
+import { ShortsRail } from "@/components/Shorts";
 import { FEATURED, ROWS, GENRES, byGenre, formatRuntime } from "@/lib/movies";
 import { getContinueWatching } from "@/lib/library.functions";
 import { useSession } from "@/hooks/useSession";
@@ -136,6 +137,8 @@ function Home() {
           </div>
         </div>
       </header>
+
+      <ShortsRail />
 
       <ContinueWatchingRail />
 
