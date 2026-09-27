@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DownloadsRouteImport } from './routes/downloads'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as ShortsRouteImport } from './routes/shorts'
 import { Route as MovieMovieIdRouteImport } from './routes/movie.$movieId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const SearchRoute = SearchRouteImport.update({
   path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShortsRoute = ShortsRouteImport.update({
+  id: '/shorts',
+  path: '/shorts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MovieMovieIdRoute = MovieMovieIdRouteImport.update({
   id: '/movie/$movieId',
   path: '/movie/$movieId',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/downloads': typeof DownloadsRoute
   '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
+  '/shorts': typeof ShortsRoute
   '/movie/$movieId': typeof MovieMovieIdRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/downloads': typeof DownloadsRoute
   '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
+  '/shorts': typeof ShortsRoute
   '/movie/$movieId': typeof MovieMovieIdRoute
 }
 export interface FileRoutesById {
@@ -70,14 +78,28 @@ export interface FileRoutesById {
   '/downloads': typeof DownloadsRoute
   '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
+  '/shorts': typeof ShortsRoute
   '/movie/$movieId': typeof MovieMovieIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/downloads' | '/profile' | '/search' | '/movie/$movieId'
+    | '/'
+    | '/auth'
+    | '/downloads'
+    | '/profile'
+    | '/search'
+    | '/shorts'
+    | '/movie/$movieId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/downloads' | '/profile' | '/search' | '/movie/$movieId'
+  to:
+    | '/'
+    | '/auth'
+    | '/downloads'
+    | '/profile'
+    | '/search'
+    | '/shorts'
+    | '/movie/$movieId'
   id:
     | '__root__'
     | '/'
@@ -85,6 +107,7 @@ export interface FileRouteTypes {
     | '/downloads'
     | '/profile'
     | '/search'
+    | '/shorts'
     | '/movie/$movieId'
   fileRoutesById: FileRoutesById
 }
@@ -94,6 +117,7 @@ export interface RootRouteChildren {
   DownloadsRoute: typeof DownloadsRoute
   ProfileRoute: typeof ProfileRoute
   SearchRoute: typeof SearchRoute
+  ShortsRoute: typeof ShortsRoute
   MovieMovieIdRoute: typeof MovieMovieIdRoute
 }
 
@@ -134,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shorts': {
+      id: '/shorts'
+      path: '/shorts'
+      fullPath: '/shorts'
+      preLoaderRoute: typeof ShortsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/movie/$movieId': {
       id: '/movie/$movieId'
       path: '/movie/$movieId'
@@ -150,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   DownloadsRoute: DownloadsRoute,
   ProfileRoute: ProfileRoute,
   SearchRoute: SearchRoute,
+  ShortsRoute: ShortsRoute,
   MovieMovieIdRoute: MovieMovieIdRoute,
 }
 export const routeTree = rootRouteImport
