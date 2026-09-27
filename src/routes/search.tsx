@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { MoviePoster } from "@/components/MoviePoster";
 import { GENRES, MOVIES, searchMovies } from "@/lib/movies";
 
-type SearchParams = { q: string; genre?: string | undefined; year?: number | undefined };
+type SearchParams = { q?: string | undefined; genre?: string | undefined; year?: number | undefined };
 
 const YEARS = Array.from(new Set(MOVIES.map((m) => m.year))).sort((a, b) => b - a);
 
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/search")({
 function SearchPage() {
   const { q, genre, year } = Route.useSearch();
   const navigate = useNavigate({ from: "/search" });
-  const results = searchMovies(q, { genre, year });
+  const results = searchMovies(q ?? "", { genre, year });
 
   const update = (patch: Partial<SearchParams>) =>
     navigate({ search: (prev) => ({ ...prev, ...patch }) });
@@ -43,7 +43,7 @@ function SearchPage() {
         <div className="relative mt-3">
           <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
-            value={q}
+            value={q ?? ""}
             onChange={(e) => update({ q: e.target.value })}
             placeholder="Film title or keyword"
             autoComplete="off"
