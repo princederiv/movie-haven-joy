@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { MoviePoster } from "@/components/MoviePoster";
 import { TrailerPlayer } from "@/components/TrailerPlayer";
-import { formatRuntime, getMovie, similarTo } from "@/lib/movies";
+import { formatRuntime } from "@/lib/movies";
+import { getMovieDetail } from "@/lib/tmdb.functions";
 import { isSavedOffline, removeOffline, saveOffline, subscribeOffline } from "@/lib/offline";
 import { useSession } from "@/hooks/useSession";
 import {
@@ -21,21 +22,31 @@ import {
 export const Route = createFileRoute("/movie/$movieId")({
   validateSearch: (search: Record<string, unknown>): { play?: boolean } =>
     search["play"] === true || search["play"] === "true" ? { play: true } : {},
-  loader: ({ params }) => {
-    const movie = getMovie(params.movieId);
-    if (!movie) throw notFound();
-    return { movieId: movie.id };
+  loader: async ({ params }) => {
+    if (!/^\d+$/.test(params.movieId)) throw notFound();
+    const result = await getMovieDetail({ data: { id: params.movieId } });
+    if (!result) throw notFound();
+    return result;
   },
-  head: ({ params }) => {
-    const movie = getMovie(params.movieId);
+  head: ({ loaderData }) => {
+    const movie = loaderData?.movie;
     const title = movie ? `${movie.title} (${movie.year}) — StreamBox` : "Film — StreamBox";
-    const description = movie?.overview ?? "Film details on StreamBox.";
+    const description = movie?.overview || "Film details on StreamBox.";
+    const image = movie?.backdrop ?? movie?.poster;
     return {
       meta: [
         { title },
         { name: "description", content: description },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
+        { property: "og:type", content: "video.movie" },
+        { name: "twitter:card", content: "summary_large_image" },
+        ...(image
+          ? [
+              { property: "og:image", content: image },
+              { name: "twitter:image", content: image },
+            ]
+          : []),
       ],
     };
   },
@@ -51,15 +62,14 @@ export const Route = createFileRoute("/movie/$movieId")({
 });
 
 function MovieDetail() {
-  const { movieId } = Route.useLoaderData();
+  const { movie, similar } = Route.useLoaderData();
   const { play } = Route.useSearch();
   const navigate = useNavigate({ from: "/movie/$movieId" });
-  const movie = getMovie(movieId)!;
   const { user } = useSession();
   const queryClient = useQueryClient();
 
   const [offline, setOffline] = useState(false);
-  const [showPlayer, setShowPlayer] = useState(play);
+  const [showPlayer, setShowPlayer] = useState(!!play);
 
   useEffect(() => {
     const sync = () => setOffline(isSavedOffline(movie.id));

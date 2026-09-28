@@ -4,12 +4,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { Play, Plus, Star } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { PosterRail } from "@/components/PosterRail";
-import { MoviePoster } from "@/components/MoviePoster";
-import { FEATURED, ROWS, GENRES, byGenre, formatRuntime } from "@/lib/movies";
+import { getHomeCatalog } from "@/lib/tmdb.functions";
 import { getContinueWatching } from "@/lib/library.functions";
 import { useSession } from "@/hooks/useSession";
 
 export const Route = createFileRoute("/")({
+  loader: () => getHomeCatalog(),
+  staleTime: 5 * 60_000,
   head: () => ({
     meta: [
       { title: "StreamBox — tonight's films" },
@@ -23,8 +24,16 @@ export const Route = createFileRoute("/")({
         property: "og:description",
         content: "Trending, popular and top rated films, plus what you were watching.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  errorComponent: () => (
+    <div className="p-8 text-center text-sm text-muted-foreground" role="alert">
+      Couldn't load films right now. Please try again.
+    </div>
+  ),
+  notFoundComponent: () => <div className="p-8 text-center text-sm">Not found.</div>,
   component: Home,
 });
 
@@ -81,14 +90,17 @@ function ContinueWatchingRail() {
 }
 
 function Home() {
+  const { featured: FEATURED, rows } = Route.useLoaderData();
+  const genres = Array.from(new Set(rows.flatMap((r) => r.movies.flatMap((m) => m.genres)))).sort();
+  if (!FEATURED) return <AppShell><p className="p-8 text-center text-sm">No films available.</p></AppShell>;
   return (
     <AppShell>
       <header className="relative">
         <img
           src={FEATURED.poster}
           alt={FEATURED.title}
-          width={768}
-          height={1152}
+          width={500}
+          height={750}
           className="h-[78vh] w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-background/70" />
@@ -107,9 +119,8 @@ function Home() {
               <Star className="size-3 fill-current" />
               {FEATURED.rating.toFixed(1)}
             </span>
-            <span>{FEATURED.year}</span>
-            <span>{formatRuntime(FEATURED.runtime)}</span>
-            <span>{FEATURED.genres.join(" · ")}</span>
+            {FEATURED.year > 0 && <span>{FEATURED.year}</span>}
+            <span>{FEATURED.genres.slice(0, 3).join(" · ")}</span>
           </div>
           <h1 className="mt-1 font-display text-5xl leading-none text-foreground">
             {FEATURED.title}
@@ -137,17 +148,16 @@ function Home() {
         </div>
       </header>
 
-
       <ContinueWatchingRail />
 
-      {ROWS.map((row) => (
+      {rows.map((row) => (
         <PosterRail key={row.title} title={row.title} movies={row.movies} />
       ))}
 
-      <section className="mt-9 px-4">
+      <section className="mt-9 px-4 pb-4">
         <h2 className="font-display text-xl tracking-wide">Browse by genre</h2>
         <div className="mt-3 flex flex-wrap gap-2">
-          {GENRES.map((genre) => (
+          {genres.map((genre) => (
             <Link
               key={genre}
               to="/search"
@@ -156,26 +166,6 @@ function Home() {
             >
               {genre}
             </Link>
-          ))}
-        </div>
-      </section>
-
-      {GENRES.slice(0, 3).map((genre) => (
-        <PosterRail key={genre} title={genre} movies={byGenre(genre)} />
-      ))}
-
-      <section className="mt-10 px-4">
-        <h2 className="font-display text-lg tracking-wide">New releases</h2>
-        <div className="mt-3 grid grid-cols-3 gap-3">
-          {ROWS[0]!.movies.slice(0, 6).map((m) => (
-            <MoviePoster
-              key={m.id}
-              id={m.id}
-              title={m.title}
-              poster={m.poster}
-              year={m.year}
-              rating={m.rating}
-            />
           ))}
         </div>
       </section>
