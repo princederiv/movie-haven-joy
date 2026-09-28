@@ -1,12 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
 import { Search as SearchIcon, X } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { MoviePoster } from "@/components/MoviePoster";
-import { GENRES, MOVIES, searchMovies } from "@/lib/movies";
+import { getGenres, searchCatalog } from "@/lib/tmdb.functions";
 
 type SearchParams = { q?: string | undefined; genre?: string | undefined; year?: number | undefined };
 
-const YEARS = Array.from(new Set(MOVIES.map((m) => m.year))).sort((a, b) => b - a);
+const THIS_YEAR = 2026;
+const YEARS = Array.from({ length: 30 }, (_, i) => THIS_YEAR - i);
 
 export const Route = createFileRoute("/search")({
   validateSearch: (search: Record<string, unknown>): SearchParams => ({
@@ -23,6 +27,8 @@ export const Route = createFileRoute("/search")({
         property: "og:description",
         content: "Search films by title, filter by genre and release year.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SearchPage,
@@ -31,7 +37,19 @@ export const Route = createFileRoute("/search")({
 function SearchPage() {
   const { q, genre, year } = Route.useSearch();
   const navigate = useNavigate({ from: "/search" });
-  const results = searchMovies(q ?? "", { genre, year });
+  const [debounced, setDebounced] = useState(q ?? "");
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(q ?? ""), 350);
+    return () => clearTimeout(t);
+  }, [q]);
+  const runSearch = useServerFn(searchCatalog);
+  const fetchGenres = useServerFn(getGenres);
+  const { data: GENRES = [] } = useQuery({ queryKey: ["genres"], queryFn: () => fetchGenres(), staleTime: Infinity });
+  const { data: results = [], isFetching } = useQuery({
+    queryKey: ["search", debounced, genre, year],
+    queryFn: () => runSearch({ data: { q: debounced || undefined, genre, year } }),
+    placeholderData: keepPreviousData,
+  });
 
   const update = (patch: Partial<SearchParams>) =>
     navigate({ search: (prev) => ({ ...prev, ...patch }) });
