@@ -163,10 +163,8 @@ function MovieDetail() {
     <AppShell>
       <header className="relative">
         <img
-          src={movie.poster}
+          src={movie.backdrop ?? movie.poster}
           alt={movie.title}
-          width={768}
-          height={1152}
           className="h-[62vh] w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-background/60" />
@@ -184,8 +182,8 @@ function MovieDetail() {
               <Star className="size-3 fill-current" />
               {movie.rating.toFixed(1)}
             </span>
-            <span>{movie.year}</span>
-            <span>{formatRuntime(movie.runtime)}</span>
+            {movie.year > 0 && <span>{movie.year}</span>}
+            {movie.runtime > 0 && <span>{formatRuntime(movie.runtime)}</span>}
           </div>
         </div>
       </header>
@@ -207,7 +205,7 @@ function MovieDetail() {
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground active:scale-[0.98]"
         >
           <Play className="size-4 fill-current" />
-          {resumeAt > 30 ? "Resume preview" : "Play preview"}
+          {movie.trailerKey ? "Watch trailer" : resumeAt > 30 ? "Resume preview" : "Play preview"}
         </button>
 
         <div className="mt-2 grid grid-cols-2 gap-2">
@@ -242,41 +240,71 @@ function MovieDetail() {
         <p className="mt-5 text-sm leading-relaxed text-foreground/90">{movie.overview}</p>
 
         <dl className="mt-5 space-y-2 text-sm">
-          <div className="flex gap-2">
-            <dt className="w-20 shrink-0 text-muted-foreground">Director</dt>
-            <dd className="font-medium">{movie.director}</dd>
-          </div>
-          <div className="flex gap-2">
-            <dt className="w-20 shrink-0 text-muted-foreground">Cast</dt>
-            <dd className="font-medium">{movie.cast.join(", ")}</dd>
-          </div>
+          {movie.director && (
+            <div className="flex gap-2">
+              <dt className="w-20 shrink-0 text-muted-foreground">Director</dt>
+              <dd className="font-medium">{movie.director}</dd>
+            </div>
+          )}
+          {movie.cast.length > 0 && (
+            <div className="flex gap-2">
+              <dt className="w-20 shrink-0 text-muted-foreground">Cast</dt>
+              <dd className="font-medium">{movie.cast.join(", ")}</dd>
+            </div>
+          )}
         </dl>
       </div>
 
-      <section className="mt-8">
-        <h2 className="px-4 font-display text-xl tracking-wide">More like this</h2>
-        <div className="mt-3 grid grid-cols-3 gap-3 px-4">
-          {similarTo(movie).map((m) => (
-            <MoviePoster
-              key={m.id}
-              id={m.id}
-              title={m.title}
-              poster={m.poster}
-              year={m.year}
-              rating={m.rating}
-            />
-          ))}
-        </div>
-      </section>
+      {similar.length > 0 && (
+        <section className="mt-8">
+          <h2 className="px-4 font-display text-xl tracking-wide">More like this</h2>
+          <div className="mt-3 grid grid-cols-3 gap-3 px-4">
+            {similar.map((m) => (
+              <MoviePoster
+                key={m.id}
+                id={m.id}
+                title={m.title}
+                poster={m.poster}
+                year={m.year}
+                rating={m.rating}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
-      {showPlayer && (
+      {showPlayer && movie.trailerKey && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-background">
+          <button
+            onClick={() => {
+              setShowPlayer(false);
+              navigate({ search: {}, replace: true });
+            }}
+            aria-label="Close trailer"
+            className="absolute right-3 top-[calc(env(safe-area-inset-top)+12px)] z-10 rounded-full bg-card/80 px-3 py-1.5 text-sm font-semibold"
+          >
+            Close
+          </button>
+          <div className="flex flex-1 items-center">
+            <iframe
+              title={`${movie.title} trailer`}
+              src={`https://www.youtube-nocookie.com/embed/${movie.trailerKey}?autoplay=1&playsinline=1`}
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+              className="aspect-video w-full"
+            />
+          </div>
+        </div>
+      )}
+
+      {showPlayer && !movie.trailerKey && (
         <TrailerPlayer
           movie={movie}
           startAt={resumeAt}
           onProgress={handleProgress}
           onClose={() => {
             setShowPlayer(false);
-            navigate({ search: { play: false }, replace: true });
+            navigate({ search: {}, replace: true });
           }}
         />
       )}
