@@ -97,7 +97,7 @@ export const getHomeCatalog = createServerFn({ method: "GET" }).handler(async ()
 });
 
 export const getMovieDetail = createServerFn({ method: "GET" })
-  .inputValidator((input: unknown) => z.object({ id: z.string().regex(/^\d+$/) }).parse(input))
+  .inputValidator((input: unknown) => z.object({ id: z.string().regex(/^(tv-)?\d+$/) }).parse(input))
   .handler(async ({ data }): Promise<{ movie: CatalogMovie; similar: CatalogMovie[] } | null> => {
     type Detail = TmdbListItem & {
       runtime?: number;
@@ -105,9 +105,15 @@ export const getMovieDetail = createServerFn({ method: "GET" })
       credits?: { cast: { name: string }[]; crew: { job: string; name: string }[] };
       videos?: { results: { site: string; type: string; key: string; official?: boolean }[] };
     };
+    const isTv = data.id.startsWith("tv-");
+    const rawId = data.id.replace("tv-", "");
+    const base = isTv ? `/tv/${rawId}` : `/movie/${rawId}`;
     let d: Detail;
     try {
-      d = await tmdb<Detail>(`/movie/${data.id}`, { append_to_response: "credits,videos" });
+      const raw = await tmdb<Detail & { name?: string; first_air_date?: string; episode_run_time?: number[]; created_by?: { name: string }[] }>(base, { append_to_response: "credits,videos" });
+      d = isTv
+        ? { ...raw, title: raw.name ?? "", runtime: raw.episode_run_time?.[0] ?? 0, ...(raw.first_air_date ? { release_date: raw.first_air_date } : {}), credits: { cast: raw.credits?.cast ?? [], crew: (raw.created_by ?? []).map((c) => ({ job: "Director", name: c.name })) } }
+        : raw;
     } catch {
       return null;
     }
@@ -122,9 +128,12 @@ export const getMovieDetail = createServerFn({ method: "GET" })
       runtime: d.runtime ?? 0,
       cast: (d.credits?.cast ?? []).slice(0, 6).map((c) => c.name),
       director: d.credits?.crew.find((c) => c.job === "Director")?.name ?? "",
+      id: data.id,
       trailerKey: trailer?.key ?? null,
     };
-    const similar = await list(`/movie/${data.id}/recommendations`).catch(() => []);
+    const similar = isTv
+      ? await tvList(`${base}/recommendations`).then((r) => r.items).catch(() => [])
+      : await list(`${base}/recommendations`).catch(() => []);
     return { movie, similar: similar.slice(0, 9) };
   });
 
@@ -158,3 +167,103 @@ export const searchCatalog = createServerFn({ method: "GET" })
       ...(data.year ? { primary_release_year: String(data.year) } : {}),
     });
   });
+
+type TmdbTvItem = {
+  id: number;
+  name: string;
+  first_air_date?: string;
+  vote_average?: number;
+  genre_ids?: number[];
+  overview?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+};
+
+let tvGenreCache: Map<number, string> | null = null;
+async function tvGenreMap() {
+  if (tvGenreCache) return tvGenreCache;
+  const data = await tmdb<{ genres: { id: number; name: string }[] }>("/genre/tv/list");
+  tvGenreCache = new Map(data.genres.map((g) => [g.id, g.name]));
+  return tvGenreCache;
+}
+
+async function tvList(path: string, params: Record<string, string> = {}) {
+  const [genres, data] = await Promise.all([
+    tvGenreMap(),
+    tmdb<{ results: TmdbTvItem[]; total_pages: number }>(path, params),
+  ]);
+  return {
+    totalPages: data.total_pages,
+    items: data.results
+      .filter((m) => m.poster_path)
+      .map((m) => ({
+        ...mapItem(
+          { ...m, title: m.name, ...(m.first_air_date ? { release_date: m.first_air_date } : {}) },
+          genres,
+        ),
+        id: `tv-${m.id}`,
+      })),
+  };
+}
+
+async function movieListPaged(path: string, params: Record<string, string> = {}) {
+  const [genres, data] = await Promise.all([
+    genreMap(),
+    tmdb<{ results: TmdbListItem[]; total_pages: number }>(path, params),
+  ]);
+  return {
+    totalPages: data.total_pages,
+    items: data.results.filter((m) => m.poster_path).map((m) => mapItem(m, genres)),
+  };
+}
+
+export const CATEGORY_TYPES = ["all", "movies", "tv", "animation", "anime"] as const;
+
+export const getDiscoverPage = createServerFn({ method: "GET" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({ type: z.enum(CATEGORY_TYPES), page: z.number().int().min(1).max(500) })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const page = String(data.page);
+    const sort = { sort_by: "popularity.desc", page };
+    switch (data.type) {
+      case "tv":
+        return tvList("/discover/tv", { ...sort, without_genres: "16" });
+      case "anime":
+        return tvList("/discover/tv", { ...sort, with_genres: "16", with_original_language: "ja" });
+      case "animation":
+        return movieListPaged("/discover/movie", { ...sort, with_genres: "16" });
+      case "movies":
+        return movieListPaged("/discover/movie", sort);
+      default:
+        return movieListPaged("/trending/movie/day", { page });
+    }
+  });
+
+export type TrailerShort = {
+  movie: CatalogMovie;
+  youtubeKey: string;
+};
+
+export const getTrailerShorts = createServerFn({ method: "GET" }).handler(
+  async (): Promise<TrailerShort[]> => {
+    const movies = (await list("/trending/movie/week")).slice(0, 16);
+    const withKeys = await Promise.all(
+      movies.map(async (movie) => {
+        try {
+          const v = await tmdb<{ results: { site: string; type: string; key: string }[] }>(
+            `/movie/${movie.id}/videos`,
+          );
+          const yt = v.results.filter((r) => r.site === "YouTube");
+          const pick = yt.find((r) => r.type === "Trailer") ?? yt.find((r) => r.type === "Teaser") ?? yt[0];
+          return pick ? { movie, youtubeKey: pick.key } : null;
+        } catch {
+          return null;
+        }
+      }),
+    );
+    return withKeys.filter((x): x is TrailerShort => !!x);
+  },
+);

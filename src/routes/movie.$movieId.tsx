@@ -23,7 +23,7 @@ export const Route = createFileRoute("/movie/$movieId")({
   validateSearch: (search: Record<string, unknown>): { play?: boolean } =>
     search["play"] === true || search["play"] === "true" ? { play: true } : {},
   loader: async ({ params }) => {
-    if (!/^\d+$/.test(params.movieId)) throw notFound();
+    if (!/^(tv-)?\d+$/.test(params.movieId)) throw notFound();
     const result = await getMovieDetail({ data: { id: params.movieId } });
     if (!result) throw notFound();
     return result;
