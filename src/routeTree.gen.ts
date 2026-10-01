@@ -16,6 +16,8 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as ShortsRouteImport } from './routes/shorts'
 import { Route as MovieMovieIdRouteImport } from './routes/movie.$movieId'
+import { Route as WatchFilmIdRouteImport } from './routes/watch.$filmId'
+import { Route as ApiPublicSubtitlesRouteImport } from './routes/api/public/subtitles'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +54,16 @@ const MovieMovieIdRoute = MovieMovieIdRouteImport.update({
   path: '/movie/$movieId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WatchFilmIdRoute = WatchFilmIdRouteImport.update({
+  id: '/watch/$filmId',
+  path: '/watch/$filmId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicSubtitlesRoute = ApiPublicSubtitlesRouteImport.update({
+  id: '/api/public/subtitles',
+  path: '/api/public/subtitles',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +73,8 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/shorts': typeof ShortsRoute
   '/movie/$movieId': typeof MovieMovieIdRoute
+  '/watch/$filmId': typeof WatchFilmIdRoute
+  '/api/public/subtitles': typeof ApiPublicSubtitlesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +84,8 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/shorts': typeof ShortsRoute
   '/movie/$movieId': typeof MovieMovieIdRoute
+  '/watch/$filmId': typeof WatchFilmIdRoute
+  '/api/public/subtitles': typeof ApiPublicSubtitlesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +96,8 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/shorts': typeof ShortsRoute
   '/movie/$movieId': typeof MovieMovieIdRoute
+  '/watch/$filmId': typeof WatchFilmIdRoute
+  '/api/public/subtitles': typeof ApiPublicSubtitlesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +109,8 @@ export interface FileRouteTypes {
     | '/search'
     | '/shorts'
     | '/movie/$movieId'
+    | '/watch/$filmId'
+    | '/api/public/subtitles'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +120,8 @@ export interface FileRouteTypes {
     | '/search'
     | '/shorts'
     | '/movie/$movieId'
+    | '/watch/$filmId'
+    | '/api/public/subtitles'
   id:
     | '__root__'
     | '/'
@@ -109,6 +131,8 @@ export interface FileRouteTypes {
     | '/search'
     | '/shorts'
     | '/movie/$movieId'
+    | '/watch/$filmId'
+    | '/api/public/subtitles'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +143,8 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   ShortsRoute: typeof ShortsRoute
   MovieMovieIdRoute: typeof MovieMovieIdRoute
+  WatchFilmIdRoute: typeof WatchFilmIdRoute
+  ApiPublicSubtitlesRoute: typeof ApiPublicSubtitlesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +198,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MovieMovieIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/watch/$filmId': {
+      id: '/watch/$filmId'
+      path: '/watch/$filmId'
+      fullPath: '/watch/$filmId'
+      preLoaderRoute: typeof WatchFilmIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/subtitles': {
+      id: '/api/public/subtitles'
+      path: '/api/public/subtitles'
+      fullPath: '/api/public/subtitles'
+      preLoaderRoute: typeof ApiPublicSubtitlesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +223,8 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   ShortsRoute: ShortsRoute,
   MovieMovieIdRoute: MovieMovieIdRoute,
+  WatchFilmIdRoute: WatchFilmIdRoute,
+  ApiPublicSubtitlesRoute: ApiPublicSubtitlesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
