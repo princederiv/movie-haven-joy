@@ -158,7 +158,7 @@ function InfiniteCatalog({ type, title }: { type: Exclude<TypeId, "free">; title
       <h2 className="font-display text-xl tracking-wide">{title}</h2>
       <div className="mt-3 grid grid-cols-3 gap-3">
         {items.map((m) => (
-          <MoviePoster key={m.id} id={m.id} title={m.title} poster={m.poster} year={m.year || undefined} rating={m.rating} />
+          <MoviePoster key={m.id} id={m.id} title={m.title} poster={m.poster} {...(m.year ? { year: m.year } : {})} rating={m.rating} />
         ))}
       </div>
       <div ref={sentinel} className="py-6 text-center text-xs text-muted-foreground">
