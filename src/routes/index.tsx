@@ -1,5 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { MoviePoster } from "@/components/MoviePoster";
+import { getDiscoverPage } from "@/lib/tmdb.functions";
+import { listFreeFilms } from "@/lib/archive.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { Play, Plus, Star } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -8,7 +12,21 @@ import { getHomeCatalog } from "@/lib/tmdb.functions";
 import { getContinueWatching } from "@/lib/library.functions";
 import { useSession } from "@/hooks/useSession";
 
+const TYPES = [
+  { id: "all", label: "For you" },
+  { id: "free", label: "Full films" },
+  { id: "movies", label: "Movies" },
+  { id: "tv", label: "TV shows" },
+  { id: "animation", label: "Animation" },
+  { id: "anime", label: "Anime" },
+] as const;
+type TypeId = (typeof TYPES)[number]["id"];
+
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>): { type?: TypeId } => {
+    const t = search["type"];
+    return TYPES.some((x) => x.id === t) && t !== "all" ? { type: t as TypeId } : {};
+  },
   loader: () => getHomeCatalog(),
   staleTime: 5 * 60_000,
   head: () => ({
@@ -89,13 +107,128 @@ function ContinueWatchingRail() {
   );
 }
 
+function CategoryBar({ active }: { active: TypeId }) {
+  return (
+    <nav className="sticky top-0 z-40 flex gap-2 overflow-x-auto bg-background/85 px-4 pb-2.5 pt-[calc(env(safe-area-inset-top)+10px)] backdrop-blur-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {TYPES.map((t) => (
+        <Link
+          key={t.id}
+          to="/"
+          search={t.id === "all" ? {} : { type: t.id }}
+          className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${
+            active === t.id
+              ? "bg-primary text-primary-foreground"
+              : "border border-border bg-card text-foreground"
+          }`}
+        >
+          {t.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+function useEndReached(onEnd: () => void, enabled: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !enabled) return;
+    const io = new IntersectionObserver(([e]) => e?.isIntersecting && onEnd(), { rootMargin: "600px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [onEnd, enabled]);
+  return ref;
+}
+
+function InfiniteCatalog({ type, title }: { type: Exclude<TypeId, "free">; title: string }) {
+  const fetchPage = useServerFn(getDiscoverPage);
+  const q = useInfiniteQuery({
+    queryKey: ["discover", type],
+    queryFn: ({ pageParam }) => fetchPage({ data: { type, page: pageParam } }),
+    initialPageParam: 1,
+    getNextPageParam: (last, all) => (all.length < Math.min(last.totalPages, 500) ? all.length + 1 : undefined),
+  });
+  const sentinel = useEndReached(() => {
+    if (q.hasNextPage && !q.isFetchingNextPage) q.fetchNextPage();
+  }, !!q.hasNextPage);
+  const seen = new Set<string>();
+  const items = (q.data?.pages ?? []).flatMap((p) => p.items).filter((m) => !seen.has(m.id) && seen.add(m.id));
+  return (
+    <section className="mt-6 px-4">
+      <h2 className="font-display text-xl tracking-wide">{title}</h2>
+      <div className="mt-3 grid grid-cols-3 gap-3">
+        {items.map((m) => (
+          <MoviePoster key={m.id} id={m.id} title={m.title} poster={m.poster} year={m.year || undefined} rating={m.rating} />
+        ))}
+      </div>
+      <div ref={sentinel} className="py-6 text-center text-xs text-muted-foreground">
+        {q.isFetching ? "Loading more…" : q.hasNextPage ? "" : "You've reached the end"}
+      </div>
+    </section>
+  );
+}
+
+function FreeFilmsCatalog() {
+  const fetchPage = useServerFn(listFreeFilms);
+  const q = useInfiniteQuery({
+    queryKey: ["free-films"],
+    queryFn: ({ pageParam }) => fetchPage({ data: { page: pageParam } }),
+    initialPageParam: 1,
+    getNextPageParam: (last, all) => (all.length < Math.min(last.totalPages, 200) ? all.length + 1 : undefined),
+  });
+  const sentinel = useEndReached(() => {
+    if (q.hasNextPage && !q.isFetchingNextPage) q.fetchNextPage();
+  }, !!q.hasNextPage);
+  const items = (q.data?.pages ?? []).flatMap((p) => p.items);
+  return (
+    <section className="mt-4 px-4">
+      <h2 className="font-display text-xl tracking-wide">Full films, free to watch</h2>
+      <p className="mt-1 text-xs text-muted-foreground">Classic public-domain films you can play from start to finish.</p>
+      <div className="mt-3 grid grid-cols-3 gap-3">
+        {items.map((f) => (
+          <Link key={f.id} to="/watch/$filmId" params={{ filmId: f.id }} className="block active:scale-[0.96]">
+            <img src={f.poster} alt={f.title} loading="lazy" className="aspect-[2/3] w-full rounded-xl bg-card object-cover ring-1 ring-border/60" />
+            <p className="mt-2 line-clamp-1 text-[13px] font-semibold">{f.title}</p>
+            {f.year && <p className="text-[11px] text-muted-foreground">{f.year}</p>}
+          </Link>
+        ))}
+      </div>
+      <div ref={sentinel} className="py-6 text-center text-xs text-muted-foreground">
+        {q.isFetching ? "Loading more…" : ""}
+      </div>
+    </section>
+  );
+}
+
 function Home() {
+  const { type = "all" } = Route.useSearch();
+  if (type === "free")
+    return (
+      <AppShell>
+        <CategoryBar active="free" />
+        <FreeFilmsCatalog />
+      </AppShell>
+    );
+  if (type !== "all") {
+    const label = TYPES.find((t) => t.id === type)!.label;
+    return (
+      <AppShell>
+        <CategoryBar active={type} />
+        <InfiniteCatalog key={type} type={type} title={`Popular ${label.toLowerCase()}`} />
+      </AppShell>
+    );
+  }
+  return <ForYou />;
+}
+
+function ForYou() {
   const { featured: FEATURED, rows } = Route.useLoaderData();
   const genres = Array.from(new Set(rows.flatMap((r) => r.movies.flatMap((m) => m.genres)))).sort();
   if (!FEATURED) return <AppShell><p className="p-8 text-center text-sm">No films available.</p></AppShell>;
   return (
     <AppShell>
-      <header className="relative">
+      <CategoryBar active="all" />
+      <header className="relative -mt-[calc(env(safe-area-inset-top)+50px)]">
         <img
           src={FEATURED.poster}
           alt={FEATURED.title}
@@ -169,6 +302,8 @@ function Home() {
           ))}
         </div>
       </section>
+
+      <InfiniteCatalog type="all" title="Keep scrolling" />
     </AppShell>
   );
 }
